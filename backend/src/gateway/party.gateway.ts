@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 import {
   WebSocketGateway,
   WebSocketServer,
@@ -8,6 +9,7 @@ import {
   OnGatewayDisconnect,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { Song } from '../songs/song.model';
 
 @WebSocketGateway({
   cors: {
@@ -19,10 +21,12 @@ export class PartyGateway implements OnGatewayConnection, OnGatewayDisconnect {
   server: Server;
 
   handleConnection(client: Socket) {
+    //TODO auth checks
     console.log(`Client connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
+    //TODO auth checks
     console.log(`Client disconnected: ${client.id}`);
   }
 
@@ -33,13 +37,14 @@ export class PartyGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {
     client.join(partyId);
     console.log(`Client ${client.id} joined party ${partyId}`);
+    console.log('🔥 Client rooms now:', client.rooms);
   }
 
-  broadcastSongAdded(partyId: string, song: any) {
+  broadcastSongAdded(partyId: string, song: Song) {
     this.server.to(partyId).emit('song_added', song);
   }
 
-  broadcastSongDeleted(partyId: string, song: any) {
+  broadcastSongDeleted(partyId: string, song: Song) {
     this.server.to(partyId).emit('song_deleted', song);
   }
 }

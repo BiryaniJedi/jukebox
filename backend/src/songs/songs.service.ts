@@ -4,12 +4,14 @@ import { DatabaseService } from '../database/database.service';
 import { PartiesService } from '../parties/parties.service';
 import { Song } from './song.model';
 import { assertFound } from '../common/db-utils';
+import { PartyGateway } from '../gateway/party.gateway';
 
 @Injectable()
 export class SongsService {
   constructor(
     private readonly db: DatabaseService,
     private readonly partiesService: PartiesService,
+    private readonly gateway: PartyGateway,
   ) {}
 
   async addSongToParty(party_id: string, dto: CreateSongDto): Promise<Song> {
@@ -22,7 +24,9 @@ export class SongsService {
       [party_id, dto.title, dto.artist, dto.requestedBy],
     );
 
-    return result.rows[0];
+    const song = result.rows[0];
+    this.gateway.broadcastSongAdded(party_id, song);
+    return song;
   }
 
   async getSongsForParty(party_id: string): Promise<Song[]> {
@@ -54,6 +58,8 @@ export class SongsService {
       [party_id, song_id],
     );
 
-    return assertFound(result.rows, song_id, 'Song');
+    const deletedSong = assertFound(result.rows, song_id, 'Song');
+    this.gateway.broadcastSongDeleted(party_id, deletedSong);
+    return deletedSong;
   }
 }

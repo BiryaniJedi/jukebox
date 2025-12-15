@@ -4,8 +4,8 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PartiesModule } from './parties/parties.module';
 import { DatabaseModule } from './database/database.module';
-import { SongsService } from './songs/songs.service';
 import { SongsModule } from './songs/songs.module';
+import { GatewayModule } from './gateway/gateway.module';
 
 @Module({
   imports: [
@@ -15,8 +15,9 @@ import { SongsModule } from './songs/songs.module';
     PartiesModule,
     DatabaseModule,
     SongsModule,
+    GatewayModule,
   ],
   controllers: [AppController],
-  providers: [AppService, SongsService],
+  providers: [AppService],
 })
 export class AppModule {}
