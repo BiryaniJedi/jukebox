@@ -1,5 +1,4 @@
-import PartySongs from './PartySongs';
-import AddSongForm from './AddSongForm';
+import PartyClient from './PartyClient';
 import './party.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -21,15 +20,14 @@ export default async function PartyPage({ params }: PartyPageProps) {
 
   if (!res.ok) {
     console.error("Failed to fetch songs", await res.text());
-    return <PartySongs partyId={partyId} initialSongs={[]} />;
+    return <PartyClient partyId={partyId} initialSongs={[]} />;
   }
 
   const songs = await res.json();
 
   return (
     <div className='party-container'>
-      <AddSongForm partyId={partyId} />
-      <PartySongs partyId={partyId} initialSongs={songs} />
+      <PartyClient partyId={partyId} initialSongs={songs} />
     </div>
   );
 }

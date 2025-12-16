@@ -3,95 +3,104 @@
 import { useCallback, useState } from 'react';
 import { Song } from '@/types/song.type';
 import { usePartySocket } from '@/hooks/usePartySocket';
+import { formatTimestamp } from '@/lib/date-format';
 
 type PartySongsProps = {
   partyId: string;
-  initialSongs: Song[];
+  songs: Song[];
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  onDeleteSong: (song: Song) => Promise<void>;
 };
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 export default function PartySongs({
   partyId,
-  initialSongs,
+  songs,
+  setSongs,
+  onDeleteSong,
 }: PartySongsProps) {
-  const [songs, setSongs] = useState<Song[]>(
-    Array.isArray(initialSongs) ? initialSongs : []
-  );
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
 
   const onSongAdded = useCallback((song: Song) => {
-    setSongs(prev => 
-      prev.find(s => s.song_id === song.song_id)
-      ? prev
-      : [...prev, song]
+  setSongs(prev => {
+    const withoutOptimistic = prev.filter(
+      s =>
+        !(
+          s.optimistic &&
+          s.title === song.title &&
+          s.artist === song.artist &&
+          s.requested_by.user_id === song.requested_by.user_id
+        )
     );
-  }, []);
+
+    if (withoutOptimistic.some(s => s.song_id === song.song_id)) {
+      return withoutOptimistic;
+    }
+
+    return [...withoutOptimistic, song];
+  });
+}, [setSongs]);
 
   const onSongDeleted = useCallback((deletedSong: Song) => {
     setSongs(prev =>
       prev.filter(s => s.song_id !== deletedSong.song_id)
     );
-  }, []);
+  }, [setSongs]);
 
+  // socket hookup
   usePartySocket(partyId, onSongAdded, onSongDeleted);
-  
-  // --- DELETE SONG HANDLER ---
-  async function handleDelete(songId: string) {
-    setDeleting(prev => new Set(prev).add(songId));
+
+  // --- OPTIMISTIC DELETE ---
+  async function handleDelete(song: Song) {
+    if (!song.song_id) return;
+
+    setDeleting(prev => new Set(prev).add(song.song_id!));
     setError(null);
 
-    const res = await fetch(
-      `${API_URL}/parties/${partyId}/songs/${songId}`,
-      {
-        method: 'DELETE',
-      }
-    );
+    // snapshot
+    setSongs(prev => prev.filter(s => s.song_id !== song.song_id));
 
-    if (!res.ok) {
-      let message = 'Failed to delete song';
-
-      try{
-        const data = await res.json();
-        message = data.message ?? message;
-      } catch {
-
-      }
-      setError(message);
+    try {
+      await onDeleteSong(song);
+    } catch {
+      setError('Failed to delete song');
+    } finally {
       setDeleting(prev => {
         const next = new Set(prev);
-        next.delete(songId);
+        next.delete(song.song_id!);
         return next;
       });
-      return;
     }
-
-    // socket event will update state
-    setDeleting(prev => {
-      const next = new Set(prev);
-      next.delete(songId);
-      return next;
-    });
   }
 
   return (
     <div>
-      <h2>Songs</h2>
+      <h1>Songs</h1>
 
       {songs.length === 0 ? (
         <p>No songs yet</p>
       ) : (
         <ul className="song-list">
-          {songs.map((song) => (
-            <li key={song.song_id}>
-              <strong>{song.title}</strong> – {song.artist}. Requested By: {song.requested_by.display_name}{' '}
+          {songs.map(song => (
+            <li 
+              key={song.song_id ?? song.temp_id}
+              className={song.optimistic ? 'optimistic' : ''}
+            >
+              <strong>{song.title}</strong> – {song.artist}
+              {song.optimistic && <em style={{ opacity: 0.6 }}> (pending…)</em>}
+              <p>
+                Requested by <strong>{song.requested_by.display_name}</strong>
+                {' at '}
+                {formatTimestamp(song.requested_at)}
+              </p>
               <button
                 className="party-button"
-                disabled={deleting.has(song.song_id)}
-                onClick={() => handleDelete(song.song_id)}
+                disabled={!!song.song_id && deleting.has(song.song_id)}
+                onClick={() => handleDelete(song)}
               >
-                {deleting.has(song.song_id) ? 'Deleting...' : 'Delete'}
+                Delete
               </button>
             </li>
           ))}

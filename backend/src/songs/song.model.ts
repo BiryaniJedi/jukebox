@@ -3,7 +3,7 @@ export class Song {
   party_id: string;
   title: string;
   artist: string;
-  requested_at: Date;
+  requested_at: string;
   requested_by: {
     user_id: string;
     display_name: string;

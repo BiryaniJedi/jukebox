@@ -19,7 +19,7 @@ export function mapSongRow(row: SongRow): Song {
     party_id: row.party_id,
     title: row.title,
     artist: row.artist,
-    requested_at: row.requested_at,
+    requested_at: row.requested_at.toISOString(),
     requested_by: {
       user_id: row.user_id,
       display_name: row.display_name,

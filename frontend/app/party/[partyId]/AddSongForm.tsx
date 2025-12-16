@@ -1,22 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import { Song } from '@/types/song.type';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
 type AddSongFormProps = {
   partyId: string;
+  onOptimisticSong: (song: Song) => void;
+  onOptimisticSongFailed: (tempId: string) => void;
 };
 
-export default function AddSongForm({ partyId }: AddSongFormProps) {
+export default function AddSongForm({ partyId, onOptimisticSong, onOptimisticSongFailed }: AddSongFormProps) {
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
-  const [userId, setUserId] = useState(''); // 👈 NEW
+  const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
 
     if (!userId) {
       setError('User ID is required');
@@ -26,35 +30,47 @@ export default function AddSongForm({ partyId }: AddSongFormProps) {
     setLoading(true);
     setError(null);
 
-    const res = await fetch(
-      `${API_URL}/parties/${partyId}/songs`,
-      {
+    const tempId = crypto.randomUUID();
+
+    onOptimisticSong({
+      temp_id: tempId,
+      party_id: partyId,
+      title,
+      artist,
+      requested_by: {
+        user_id: userId,
+        display_name: 'Guest',
+      },
+      requested_at: new Date().toISOString(),
+      optimistic: true,
+    })
+
+     try {
+      const res = await fetch(`${API_URL}/parties/${partyId}/songs`, {
         method: 'POST',
-        headers: {
+        headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': userId, // 👈 HEADER SET HERE
-        },
-        body: JSON.stringify({
-          title,
-          artist,
-        }),
+          'x-user-id': userId,
+         },
+        body: JSON.stringify({ title, artist }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Failed to add song');
       }
-    );
 
-    if (!res.ok) {
-      let message = 'Failed to add song';
-      try {
-        const data = await res.json();
-        message = data.message ?? message;
-      } catch {}
-      setError(message);
+      // Do nothing here — websocket will reconcile
+      setTitle('');
+      setArtist('');
+    } catch (err) {
+      onOptimisticSongFailed(tempId);
+      setError('Failed to add song');
+      // rollback happens in PartySongs via websocket absence
+    } finally {
+      setTitle('');
+      setArtist('');
       setLoading(false);
-      return;
     }
-
-    setTitle('');
-    setArtist('');
-    setLoading(false);
   }
 
   return (
