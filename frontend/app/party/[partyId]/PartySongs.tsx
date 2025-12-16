@@ -85,7 +85,7 @@ export default function PartySongs({
         <ul className="song-list">
           {songs.map((song) => (
             <li key={song.song_id}>
-              <strong>{song.title}</strong> – {song.artist}. Requested By: {song.requested_by}{' '}
+              <strong>{song.title}</strong> – {song.artist}. Requested By: {song.requested_by.display_name}{' '}
               <button
                 className="party-button"
                 disabled={deleting.has(song.song_id)}

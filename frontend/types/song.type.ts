@@ -3,6 +3,9 @@ export type Song = {
   party_id: string;
   title: string;
   artist: string;
-  requested_by: string | null;
-  requested_at: string;
+  requested_at: Date;
+  requested_by: {
+    user_id: string;
+    display_name: string;
+  };
 };

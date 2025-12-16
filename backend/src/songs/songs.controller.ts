@@ -4,14 +4,17 @@ import {
   Post,
   Delete,
   Body,
+  Headers,
   Param,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { SongsService } from './songs.service';
 import { Song } from './song.model';
 import { CreateSongDto } from './dto/create-song.dto';
 import { ParseUUIDPipe } from '@nestjs/common';
+import { isUUID } from 'class-validator';
 
 @Controller('parties/:party_id/songs')
 export class SongsController {
@@ -29,8 +32,16 @@ export class SongsController {
   async addSongToParty(
     @Param('party_id', ParseUUIDPipe) party_id: string,
     @Body() dto: CreateSongDto,
+    @Headers('x-user-id') user_id: string,
   ): Promise<Song> {
-    const result = await this.songsService.addSongToParty(party_id, dto);
+    if (!isUUID(user_id)) {
+      throw new BadRequestException('Invalid user id');
+    }
+    const result = await this.songsService.addSongToParty(
+      party_id,
+      user_id,
+      dto,
+    );
 
     return result;
   }
