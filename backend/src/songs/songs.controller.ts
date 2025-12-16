@@ -11,6 +11,7 @@ import {
 import { SongsService } from './songs.service';
 import { Song } from './song.model';
 import { CreateSongDto } from './dto/create-song.dto';
+import { ParseUUIDPipe } from '@nestjs/common';
 
 @Controller('parties/:party_id/songs')
 export class SongsController {
@@ -36,8 +37,8 @@ export class SongsController {
 
   @Delete(':song_id')
   async deleteSongFromParty(
-    @Param('party_id') party_id: string,
-    @Param('song_id') song_id: string,
+    @Param('party_id', ParseUUIDPipe) party_id: string,
+    @Param('song_id', ParseUUIDPipe) song_id: string,
   ): Promise<Song> {
     const result = await this.songsService.deleteSongFromParty(
       party_id,

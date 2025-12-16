@@ -1,0 +1,117 @@
+/* Container */
+.party-container {
+  background-color: #000;
+  color: #fff;
+  padding: 2rem;
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Headings */
+.party-container h1,
+.party-container h2 {
+  margin-bottom: 1rem;
+  color: #f5f5f5;
+}
+
+/* Shared button style (used by forms + song list) */
+.party-button {
+  background-color: #4da3ff;
+  color: #000;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-size: 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.party-button:hover {
+  background-color: #6cb6ff;
+}
+
+.party-button:disabled {
+  background-color: #333;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Form */
+.song-form {
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background-color: #0d0d0d;
+}
+
+/* Labels */
+.song-form label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+/* Inputs */
+.song-form input {
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  margin-bottom: 1rem;
+  background-color: #111;
+  border: 1px solid #444;
+  border-radius: 6px;
+  color: #fff;
+  font-size: 1rem;
+}
+
+.song-form input::placeholder {
+  color: #777;
+}
+
+.song-form input:focus {
+  outline: none;
+  border-color: #4da3ff;
+  box-shadow: 0 0 0 1px #4da3ff;
+}
+
+/* Buttons */
+.song-form button {
+  display: inline-block;
+}
+
+.song-form button,
+.song-list .party-button {
+
+}
+
+.song-form button:hover {
+  background-color: #6cb6ff;
+}
+
+.song-form button:disabled {
+  background-color: #333;
+  color: #888;
+  cursor: not-allowed;
+}
+
+/* Error message */
+.song-form .error {
+  color: #ff6b6b;
+  margin-bottom: 1rem;
+}
+
+/* Song list */
+.song-list {
+  list-style: none;
+  padding: 0;
+}
+
+.song-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #222;
+}
+
+.song-list li strong {
+  color: #fff;
+}

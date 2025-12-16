@@ -2,59 +2,94 @@
 
 import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
-
-type Song = {
-  song_id: string;
-  party_id: string;
-  title: string;
-  artist: string;
-  requested_by: string | null;
-  requested_at: string;
-};
+import { Song } from '@/types/song.type';
 
 type PartySongsProps = {
   partyId: string;
   initialSongs: Song[];
 };
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function PartySongs({
   partyId,
   initialSongs,
 }: PartySongsProps) {
-  // Hold songs in state
-  const [songs, setSongs] = useState<Song[]>(initialSongs);
+  const [songs, setSongs] = useState<Song[]>(
+    Array.isArray(initialSongs) ? initialSongs : []
+  );
+  const [deleting, setDeleting] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
+  
+  // --- DELETE SONG HANDLER ---
+  async function handleDelete(songId: string) {
+    setDeleting(prev => new Set(prev).add(songId));
+    setError(null);
+
+    const res = await fetch(
+      `${API_URL}/parties/${partyId}/songs/${songId}`,
+      {
+        method: 'DELETE',
+      }
+    );
+
+    if (!res.ok) {
+      let message = 'Failed to delete song';
+
+      try{
+        const data = await res.json();
+        message = data.message ?? message;
+      } catch {
+
+      }
+      setError(message);
+      setDeleting(prev => {
+        const next = new Set(prev);
+        next.delete(songId);
+        return next;
+      });
+      return;
+    }
+
+    // socket event will update state
+    setDeleting(prev => {
+      const next = new Set(prev);
+      next.delete(songId);
+      return next;
+    });
+  }
 
   useEffect(() => {
-    // Connect to socket.io
     const socket: Socket = io(process.env.NEXT_PUBLIC_API_URL!);
 
-    socket.on("connect", () => {
-      console.log("Connected to socket:", socket.id);
-
-      // Join the party room
-      socket.emit("join_party", partyId);
-    });
-
-    // Listen for song_added → append
-    socket.on("song_added", (song: Song) => {
-      setSongs((prev) => [...prev, song]);
-    });
-
-    // Listen for song_deleted → remove
-    socket.on("song_deleted", (song: Song) => {
-      setSongs((prev) =>
-        prev.filter((s) => s.song_id !== song.song_id)
+    const onSongAdded = (song: Song) => {
+      setSongs(prev => 
+        prev.find(s => s.song_id === song.song_id)
+        ? prev
+        : [...prev, song]
       );
+    };
+
+    const onSongDeleted = (deletedSong: Song) => {
+      setSongs((prev) =>
+        prev.filter((s) => s.song_id !== deletedSong.song_id)
+      );
+    };
+
+    socket.on('connect', () => {
+      socket.emit('join_party', partyId);
     });
 
-    // Cleanup on unmount
+    socket.on('song_added', onSongAdded);
+    socket.on('song_deleted', onSongDeleted);
+
     return () => {
+      socket.off('song_added', onSongAdded);
+      socket.off('song_deleted', onSongDeleted);
       socket.disconnect();
     };
   }, [partyId]);
 
-  // Render the list
   return (
     <div>
       <h2>Songs</h2>
@@ -62,14 +97,23 @@ export default function PartySongs({
       {songs.length === 0 ? (
         <p>No songs yet</p>
       ) : (
-        <ul>
+        <ul className="song-list">
           {songs.map((song) => (
             <li key={song.song_id}>
-              <strong>{song.title}</strong> – {song.artist}
+              <strong>{song.title}</strong> – {song.artist}. Requested By: {song.requested_by}{' '}
+              <button
+                className="party-button"
+                disabled={deleting.has(song.song_id)}
+                onClick={() => handleDelete(song.song_id)}
+              >
+                {deleting.has(song.song_id) ? 'Deleting...' : 'Delete'}
+              </button>
             </li>
           ))}
         </ul>
       )}
+
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }
