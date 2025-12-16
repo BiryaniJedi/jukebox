@@ -6,6 +6,7 @@ import { PartiesModule } from './parties/parties.module';
 import { DatabaseModule } from './database/database.module';
 import { SongsModule } from './songs/songs.module';
 import { GatewayModule } from './gateway/gateway.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { GatewayModule } from './gateway/gateway.module';
     DatabaseModule,
     SongsModule,
     GatewayModule,
+    UsersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

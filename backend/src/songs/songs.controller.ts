@@ -27,7 +27,7 @@ export class SongsController {
   @Post()
   @HttpCode(HttpStatus.CREATED) // 201
   async addSongToParty(
-    @Param('party_id') party_id: string,
+    @Param('party_id', ParseUUIDPipe) party_id: string,
     @Body() dto: CreateSongDto,
   ): Promise<Song> {
     const result = await this.songsService.addSongToParty(party_id, dto);

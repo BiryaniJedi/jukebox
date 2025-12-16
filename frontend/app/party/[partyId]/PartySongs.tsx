@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useCallback, useState } from 'react';
 import { Song } from '@/types/song.type';
+import { usePartySocket } from '@/hooks/usePartySocket';
 
 type PartySongsProps = {
   partyId: string;
@@ -20,6 +20,22 @@ export default function PartySongs({
   );
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+
+  const onSongAdded = useCallback((song: Song) => {
+    setSongs(prev => 
+      prev.find(s => s.song_id === song.song_id)
+      ? prev
+      : [...prev, song]
+    );
+  }, []);
+
+  const onSongDeleted = useCallback((deletedSong: Song) => {
+    setSongs(prev =>
+      prev.filter(s => s.song_id !== deletedSong.song_id)
+    );
+  }, []);
+
+  usePartySocket(partyId, onSongAdded, onSongDeleted);
   
   // --- DELETE SONG HANDLER ---
   async function handleDelete(songId: string) {
@@ -58,37 +74,6 @@ export default function PartySongs({
       return next;
     });
   }
-
-  useEffect(() => {
-    const socket: Socket = io(process.env.NEXT_PUBLIC_API_URL!);
-
-    const onSongAdded = (song: Song) => {
-      setSongs(prev => 
-        prev.find(s => s.song_id === song.song_id)
-        ? prev
-        : [...prev, song]
-      );
-    };
-
-    const onSongDeleted = (deletedSong: Song) => {
-      setSongs((prev) =>
-        prev.filter((s) => s.song_id !== deletedSong.song_id)
-      );
-    };
-
-    socket.on('connect', () => {
-      socket.emit('join_party', partyId);
-    });
-
-    socket.on('song_added', onSongAdded);
-    socket.on('song_deleted', onSongDeleted);
-
-    return () => {
-      socket.off('song_added', onSongAdded);
-      socket.off('song_deleted', onSongDeleted);
-      socket.disconnect();
-    };
-  }, [partyId]);
 
   return (
     <div>

@@ -21,7 +21,7 @@ export class SongsService {
       `INSERT INTO songs (party_id, title, artist, requested_by)
        VALUES ($1, $2, $3, $4)
        RETURNING song_id, party_id, title, artist, requested_by, requested_at`,
-      [party_id, dto.title, dto.artist, dto.requestedBy],
+      [party_id, dto.title, dto.artist, dto.requestedByUserId],
     );
 
     const song = result.rows[0];

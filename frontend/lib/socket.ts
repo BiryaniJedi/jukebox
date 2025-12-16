@@ -1,5 +1,7 @@
 import { io } from "socket.io-client";
 
-export const socket = io("http://localhost:3001", {
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
+export const socket = io(API_URL, {
+  autoConnect: false,
   transports: ["websocket"],
 });

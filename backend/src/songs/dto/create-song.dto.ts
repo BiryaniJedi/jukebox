@@ -10,5 +10,5 @@ export class CreateSongDto {
   artist: string;
 
   @IsString()
-  requestedBy: string;
+  requestedByUserId: string;
 }
