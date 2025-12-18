@@ -35,9 +35,19 @@ export class PartyGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() partyId: string,
     @ConnectedSocket() client: Socket,
   ) {
-    client.join(partyId);
-    console.log(`Client ${client.id} joined party ${partyId}`);
-    console.log('🔥 Client rooms now:', client.rooms);
+    if (
+      'joinedParties' in client.data &&
+      client.data.joinedParties.has(partyId)
+    ) {
+      return;
+    } else {
+      if (!('joinedParties' in client.data)) {
+        client.data.joinedParties = new Set<string>();
+      }
+      client.join(partyId);
+      client.data.joinedParties.add(partyId);
+      console.log(`Client ${client.id} joined party ${partyId}`);
+    }
   }
 
   broadcastSongAdded(partyId: string, song: Song) {
