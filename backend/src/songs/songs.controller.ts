@@ -35,7 +35,7 @@ export class SongsController {
     @Headers('x-user-id') user_id: string,
   ): Promise<Song> {
     if (!isUUID(user_id)) {
-      throw new BadRequestException('Invalid user id');
+      throw new BadRequestException('Cannot add song, Invalid user id');
     }
     const result = await this.songsService.addSongToParty(
       party_id,
@@ -50,10 +50,15 @@ export class SongsController {
   async deleteSongFromParty(
     @Param('party_id', ParseUUIDPipe) party_id: string,
     @Param('song_id', ParseUUIDPipe) song_id: string,
+    @Headers('x-user-id') requesting_uid: string,
   ): Promise<Song> {
+    if (!isUUID(requesting_uid)) {
+      throw new BadRequestException('Cannot delete song, Invalid user id');
+    }
     const result = await this.songsService.deleteSongFromParty(
       party_id,
       song_id,
+      requesting_uid,
     );
 
     return result;

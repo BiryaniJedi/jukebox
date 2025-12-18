@@ -17,6 +17,7 @@ export default function AddSongForm({ partyId, onOptimisticSong, onOptimisticSon
   const [userId, setUserId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -62,8 +63,10 @@ export default function AddSongForm({ partyId, onOptimisticSong, onOptimisticSon
       // Do nothing here — websocket will reconcile
       setTitle('');
       setArtist('');
+      setFailed(false);
     } catch (err) {
       onOptimisticSongFailed(tempId);
+      setFailed(true);
       setError('Failed to add song');
       // rollback happens in PartySongs via websocket absence
     } finally {
@@ -107,6 +110,12 @@ export default function AddSongForm({ partyId, onOptimisticSong, onOptimisticSon
         <button className="party-button" type="submit" disabled={loading}>
           {loading ? 'Adding…' : 'Add Song'}
         </button>
+
+        {failed && ( 
+          <button className="party-button" type="submit">
+            Retry?
+          </button>
+        )}
       </form>
     </div>
   );

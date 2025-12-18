@@ -7,6 +7,7 @@ import { SongRow } from '../../types/songRow.type';
 import { Song } from './song.model';
 import { assertFound, mapSongRow } from '../common/db-utils';
 import { PartyGateway } from '../gateway/party.gateway';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 
 @Injectable()
 export class SongsService {
@@ -82,16 +83,21 @@ export class SongsService {
     return songs;
   }
 
-  async deleteSongFromParty(party_id: string, song_id: string): Promise<Song> {
+  async deleteSongFromParty(
+    party_id: string,
+    song_id: string,
+    requesting_user_id: string,
+  ): Promise<Song> {
     await this.partiesService.getParty(party_id);
 
     //TODO enforce auth
     const result = await this.db.query<SongRow>(
       `DELETE FROM songs s
-        USING users u
+       USING users u
         WHERE s.party_id = $1
           AND s.song_id = $2
-          AND u.user_id = s.req_by_uid
+          AND s.req_by_uid = $3
+          AND u.user_id = s.req_by_id
         RETURNING
           s.song_id,
           s.party_id,
@@ -100,10 +106,28 @@ export class SongsService {
           s.requested_at,
           u.user_id,
           u.display_name`,
-      [party_id, song_id],
+      [party_id, song_id, requesting_user_id],
     );
 
-    const deletedSong = mapSongRow(assertFound(result.rows, song_id, 'Song'));
+    if (result.rows.length === 0) {
+      const testFail = await this.db.query<SongRow>(
+        `SELECT s.song_id, s.title, s.artist
+         FROM songs s
+         WHERE s.song_id = $1
+         AND s.party_id = $2`,
+        [song_id, party_id],
+      );
+      if (testFail.rows.length === 0) {
+        throw new NotFoundException(
+          `Requested song with song_id: ${song_id} in party with party_id: ${party_id} does not exist.`,
+        );
+      }
+
+      throw new ForbiddenException(
+        `Song was not requested by user with user_id: ${requesting_user_id}.`,
+      );
+    }
+    const deletedSong = mapSongRow(result.rows[0]);
 
     this.gateway.broadcastSongDeleted(party_id, deletedSong);
     return deletedSong;

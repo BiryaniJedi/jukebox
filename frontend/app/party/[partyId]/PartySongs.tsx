@@ -9,7 +9,7 @@ type PartySongsProps = {
   partyId: string;
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-  onDeleteSong: (song: Song) => Promise<void>;
+  onDeleteSong: (song: Song) => Promise<Error | null>;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -22,6 +22,7 @@ export default function PartySongs({
 }: PartySongsProps) {
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
+  const [reqUid, setReqUid] = useState('');
 
   const onSongAdded = useCallback((song: Song) => {
   setSongs(prev => {
@@ -57,11 +58,6 @@ export default function PartySongs({
     if (!song.song_id) return;
 
     setDeleting(prev => new Set(prev).add(song.song_id!));
-    setError(null);
-
-    // snapshot
-    setSongs(prev => prev.filter(s => s.song_id !== song.song_id));
-
     try {
       await onDeleteSong(song);
     } catch {
@@ -100,7 +96,8 @@ export default function PartySongs({
                 disabled={!!song.song_id && deleting.has(song.song_id)}
                 onClick={() => handleDelete(song)}
               >
-                Delete
+                {((song.song_id !== null && deleting.has(song.song_id!)) || 
+                (song.temp_id !== null && deleting.has(song.temp_id!))) ? "Removing.." : 'Delete'}
               </button>
             </li>
           ))}
