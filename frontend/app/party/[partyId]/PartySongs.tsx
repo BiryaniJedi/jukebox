@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import { Song } from '@/types/song.type';
 import { usePartySocket } from '@/hooks/usePartySocket';
 import { formatTimestamp } from '@/lib/date-format';
+import { getErrorMessage } from '@/lib/get-error-message';
 
 type PartySongsProps = {
   partyId: string;
@@ -11,26 +12,6 @@ type PartySongsProps = {
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
   onDeleteSong: (song: Song, requesting_uid: string) => Promise<void>;
 };
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL!;
-
-function getErrorMessage(error: unknown): string {
-  // Check if the error is a standard Error object and return its message
-  if (error instanceof Error) {
-    return error.message;
-  }
-  // Check if the error is a string literal
-  if (typeof error === 'string') {
-    return error;
-  }
-  // Fallback for other types (e.g., numbers, or complex non-Error objects)
-  try {
-    return JSON.stringify(error);
-  } catch {
-    // If stringification fails (e.g., circular references)
-    return 'An unknown error occurred';
-  }
-}
 
 export default function PartySongs({
   partyId,
@@ -76,6 +57,7 @@ export default function PartySongs({
 
     try {
       await onDeleteSong(song, uid);
+      setError('');
     } catch(err) {
       const errMessage = getErrorMessage(err);
       console.log(errMessage);
@@ -125,7 +107,7 @@ export default function PartySongs({
           ))}
         </ul>
       )}
-      <label>Delete request user_id </label>
+      <label>Delete request user_id (for testing: e217f8b1-3d9f-419f-ab1a-77c91440cc52) </label>
         <input
           placeholder="UUID"
           value={uid}

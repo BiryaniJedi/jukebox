@@ -10,6 +10,19 @@ type PartyClientProps = {
   initialSongs: Song[];
 };
 
+const getErrMsg = async (errMsg: string, res: Response) => {
+  try {
+    const body = await res.json();
+    if (typeof body.message === 'string') {
+      errMsg = body.message;
+    } else if (Array.isArray(body.message)) {
+      errMsg = body.message.join(', ');
+    }
+  } finally {
+    throw new Error(errMsg);
+  }
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function PartyClient({ partyId, initialSongs }: PartyClientProps) {
   const [songs, setSongs] = useState<Song[]>(initialSongs);
@@ -19,26 +32,38 @@ export default function PartyClient({ partyId, initialSongs }: PartyClientProps)
   }
 
   function removeOptimisticSong(tempId: string) {
-    setSongs(prev => prev.filter(s => s.song_id !== tempId));
+    setSongs(prev => prev.filter(s => 
+      (s.temp_id !== tempId)
+    ));
   }
 
   async function deleteSong(song: Song, requesting_uid: string): Promise<void> {
-      const res = await fetch(
-        `${API_URL}/parties/${partyId}/songs/${song.song_id}`, { 
-          method: 'DELETE',
-          headers: {
-            'x-user-id': requesting_uid,
-          },
-        }
-      );
-      console.log(`From PartyClient, delete response status: ${res.status}\n`);
-      if(res.status == 403){
-        throw new Error('You are not allowed to delete this song');
-      } else if(res.status == 404){
-        throw new Error('Song to delete not found');
-      } else if(res.status == 400){
-        throw new Error('Bad Delete Request');
+    const res = await fetch(
+      `${API_URL}/parties/${partyId}/songs/${song.song_id}`, { 
+        method: 'DELETE',
+        headers: {
+          'x-user-id': requesting_uid,
+        },
       }
+    );
+    if (!res.ok) {
+      await getErrMsg('Delete failed', res); 
+    }
+  }
+
+  async function addSong(title: string, artist: string, client_request_id: string, userId: string): Promise<void> {
+    const res = await fetch(`${API_URL}/parties/${partyId}/songs`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-user-id': userId,
+        },
+      body: JSON.stringify({ title, artist, client_request_id}),
+    });
+
+    if (!res.ok) {
+      await getErrMsg('Failed to add song', res);
+    }
   }
 
   return (
@@ -47,6 +72,7 @@ export default function PartyClient({ partyId, initialSongs }: PartyClientProps)
         partyId={partyId}
         onOptimisticSong={addOptimisticSong}
         onOptimisticSongFailed={removeOptimisticSong}
+        tryAddSong={addSong}
       />
       <PartySongs
         partyId={partyId}

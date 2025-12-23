@@ -45,7 +45,7 @@ export class PartyGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (!('joinedParties' in client.data)) {
         client.data.joinedParties = new Set<string>();
       }
-      client.join(partyId);
+      void client.join(partyId);
       client.data.joinedParties.add(partyId);
       console.log(`Client ${client.id} joined party ${partyId}`);
     }
