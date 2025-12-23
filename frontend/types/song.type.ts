@@ -11,5 +11,4 @@ export type Song = {
   };
   client_request_id: string,
   optimistic?: boolean;
-  deleting?: boolean;
 };

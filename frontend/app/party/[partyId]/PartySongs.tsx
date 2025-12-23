@@ -8,8 +8,9 @@ import { formatTimestamp } from '@/lib/date-format';
 type PartySongsProps = {
   partyId: string;
   songs: Song[];
+  delError: string | null;
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-  onDeleteSong: (song: Song, requesting_uid: string) => Promise<Error | null>;
+  onDeleteSong: (song: Song, requesting_uid: string) => Promise<void>;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -20,9 +21,10 @@ export default function PartySongs({
   setSongs,
   onDeleteSong,
 }: PartySongsProps) {
-  const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
   const [uid, setUid] = useState('');
+  const [deleting, setDeleting] = useState<Set<string>>(new Set());
+
 
   const onSongAdded = useCallback((song: Song) => {
   setSongs(prev => {
@@ -51,21 +53,14 @@ export default function PartySongs({
   // socket hookup
   usePartySocket(partyId, onSongAdded, onSongDeleted);
 
-  // --- OPTIMISTIC DELETE ---
+  // --- DELETE ---
   async function handleDelete(song: Song) {
     if (!song.song_id) return;
 
-    setDeleting(prev => new Set(prev).add(song.song_id!));
     try {
       await onDeleteSong(song, uid);
     } catch {
       setError('Failed to delete song');
-    } finally {
-      setDeleting(prev => {
-        const next = new Set(prev);
-        next.delete(song.song_id!);
-        return next;
-      });
     }
   }
 
@@ -90,12 +85,22 @@ export default function PartySongs({
                 {formatTimestamp(song.requested_at)}
               </p>
               <button
-                className="party-button"
-                disabled={!!song.song_id && deleting.has(song.song_id)}
-                onClick={() => handleDelete(song)}
+                className='party-button'
+                disabled={deleting.has(song.song_id!)}
+                onClick={async () => {
+                  setDeleting(prev => new Set(prev).add(song.song_id!));
+                  try {
+                    await handleDelete(song);
+                  } finally {
+                    setDeleting(prev => {
+                      const next = new Set(prev);
+                      next.delete(song.song_id!);
+                      return next;
+                    });
+                  }
+                }}
               >
-                {((song.song_id !== null && deleting.has(song.song_id!)) || 
-                (song.temp_id !== null && deleting.has(song.temp_id!))) ? "Removing.." : 'Delete'}
+                {'Delete'}
               </button>
             </li>
           ))}
@@ -108,7 +113,7 @@ export default function PartySongs({
           onChange={(e) => setUid(e.target.value)}
           required
         />
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error">{`ERROR: ${error}`}</p>}
     </div>
   );
 }

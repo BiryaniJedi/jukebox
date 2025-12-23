@@ -13,6 +13,7 @@ type PartyClientProps = {
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 export default function PartyClient({ partyId, initialSongs }: PartyClientProps) {
   const [songs, setSongs] = useState<Song[]>(initialSongs);
+  const [delError, setDelError] = useState<string | null>(null);
 
   function addOptimisticSong(song: Song) {
     setSongs(prev => [...prev, song]);
@@ -22,8 +23,7 @@ export default function PartyClient({ partyId, initialSongs }: PartyClientProps)
     setSongs(prev => prev.filter(s => s.song_id !== tempId));
   }
 
-  async function deleteSongOptimistic(song: Song, requesting_uid: string): Promise<Error | null> {
-    if (!song.song_id && !song.temp_id) return null;
+  async function deleteSong(song: Song, requesting_uid: string): Promise<void> {
     try {
         const res = await fetch(
           `${API_URL}/parties/${partyId}/songs/${song.song_id}`, { 
@@ -33,11 +33,12 @@ export default function PartyClient({ partyId, initialSongs }: PartyClientProps)
             },
           }
         );
-
-        if (!res.ok) return new Error();
-        return null;
+        console.log(`From PartyClient, delete response status: ${res.status}\n`);
+        if(res.status == 403){
+          throw new Error('You are not allowed to delete this song');
+        }
     } catch {
-        return new Error();
+        throw new Error();
     }
   }
 
@@ -51,7 +52,8 @@ export default function PartyClient({ partyId, initialSongs }: PartyClientProps)
       <PartySongs
         partyId={partyId}
         songs={songs}
-        onDeleteSong={deleteSongOptimistic}
+        delError={delError}
+        onDeleteSong={deleteSong}
         setSongs={setSongs}
       />
     </>
