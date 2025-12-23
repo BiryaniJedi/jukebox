@@ -22,22 +22,21 @@ export default function PartyClient({ partyId, initialSongs }: PartyClientProps)
     setSongs(prev => prev.filter(s => s.song_id !== tempId));
   }
 
-  async function deleteSongOptimistic(song: Song): Promise<Error | null> {
+  async function deleteSongOptimistic(song: Song, requesting_uid: string): Promise<Error | null> {
     if (!song.song_id && !song.temp_id) return null;
-
-    // snapshot
-    setSongs(prev => prev.filter(s => (s.song_id !== song.song_id || s.temp_id !== song.temp_id)));
     try {
         const res = await fetch(
-          `${API_URL}/parties/${partyId}/songs/${song.song_id}`,
-          { method: 'DELETE' }
+          `${API_URL}/parties/${partyId}/songs/${song.song_id}`, { 
+            method: 'DELETE',
+            headers: {
+              'x-user-id': requesting_uid,
+            },
+          }
         );
 
         if (!res.ok) return new Error();
         return null;
     } catch {
-        // rollback
-        setSongs(prev => [...prev, song]);
         return new Error();
     }
   }

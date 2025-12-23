@@ -6,4 +6,5 @@ export type SongRow = {
   requested_at: Date;
   user_id: string;
   display_name: string;
+  client_request_id: string;
 };

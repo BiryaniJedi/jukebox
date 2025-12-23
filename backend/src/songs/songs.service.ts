@@ -27,10 +27,10 @@ export class SongsService {
     await this.usersService.getUser(user_id);
 
     const insertedResult = await this.db.query<{ song_id: string }>(
-      `INSERT INTO songs (party_id, title, artist, req_by_uid)
-       VALUES ($1, $2, $3, $4)
+      `INSERT INTO songs (party_id, title, artist, req_by_uid, client_request_id)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING song_id`,
-      [party_id, dto.title, dto.artist, user_id],
+      [party_id, dto.title, dto.artist, user_id, dto.client_request_id],
     );
 
     const insertedSongId = assertFound(
@@ -46,6 +46,7 @@ export class SongsService {
           s.title,
           s.artist,
           s.requested_at,
+          s.client_request_id,
           u.user_id,
           u.display_name
        FROM songs s
@@ -70,6 +71,7 @@ export class SongsService {
           s.title,
           s.artist,
           s.requested_at,
+          s.client_request_id,
           u.user_id,
           u.display_name
        FROM songs s
@@ -78,7 +80,6 @@ export class SongsService {
        ORDER BY s.requested_at ASC`,
       [party_id],
     );
-
     const songs: Song[] = result.rows.map(mapSongRow);
     return songs;
   }
@@ -97,13 +98,14 @@ export class SongsService {
         WHERE s.party_id = $1
           AND s.song_id = $2
           AND s.req_by_uid = $3
-          AND u.user_id = s.req_by_id
+          AND u.user_id = s.req_by_uid
         RETURNING
           s.song_id,
           s.party_id,
           s.title,
           s.artist,
           s.requested_at,
+          s.client_request_id,
           u.user_id,
           u.display_name`,
       [party_id, song_id, requesting_user_id],
@@ -111,21 +113,20 @@ export class SongsService {
 
     if (result.rows.length === 0) {
       const testFail = await this.db.query<SongRow>(
-        `SELECT s.song_id, s.title, s.artist
+        `SELECT s.song_id, s.title, s.artist, s.client_request_id
          FROM songs s
          WHERE s.song_id = $1
          AND s.party_id = $2`,
         [song_id, party_id],
       );
+      let errMsg = '';
       if (testFail.rows.length === 0) {
-        throw new NotFoundException(
-          `Requested song with song_id: ${song_id} in party with party_id: ${party_id} does not exist.`,
-        );
+        errMsg = `Requested song with song_id: ${song_id} in party with party_id: ${party_id} does not exist.`;
+        throw new NotFoundException(errMsg);
       }
 
-      throw new ForbiddenException(
-        `Song was not requested by user with user_id: ${requesting_user_id}.`,
-      );
+      errMsg = `Song was not requested by user with user_id: ${requesting_user_id}.`;
+      throw new ForbiddenException(errMsg);
     }
     const deletedSong = mapSongRow(result.rows[0]);
 

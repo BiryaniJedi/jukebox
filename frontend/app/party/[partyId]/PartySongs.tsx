@@ -9,7 +9,7 @@ type PartySongsProps = {
   partyId: string;
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-  onDeleteSong: (song: Song) => Promise<Error | null>;
+  onDeleteSong: (song: Song, requesting_uid: string) => Promise<Error | null>;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
@@ -22,7 +22,7 @@ export default function PartySongs({
 }: PartySongsProps) {
   const [deleting, setDeleting] = useState<Set<string>>(new Set());
   const [error, setError] = useState<string | null>(null);
-  const [reqUid, setReqUid] = useState('');
+  const [uid, setUid] = useState('');
 
   const onSongAdded = useCallback((song: Song) => {
   setSongs(prev => {
@@ -30,9 +30,7 @@ export default function PartySongs({
       s =>
         !(
           s.optimistic &&
-          s.title === song.title &&
-          s.artist === song.artist &&
-          s.requested_by.user_id === song.requested_by.user_id
+          s.client_request_id == song.client_request_id
         )
     );
 
@@ -59,7 +57,7 @@ export default function PartySongs({
 
     setDeleting(prev => new Set(prev).add(song.song_id!));
     try {
-      await onDeleteSong(song);
+      await onDeleteSong(song, uid);
     } catch {
       setError('Failed to delete song');
     } finally {
@@ -103,7 +101,13 @@ export default function PartySongs({
           ))}
         </ul>
       )}
-
+      <label>Delete request user_id </label>
+        <input
+          placeholder="UUID"
+          value={uid}
+          onChange={(e) => setUid(e.target.value)}
+          required
+        />
       {error && <p className="error">{error}</p>}
     </div>
   );

@@ -8,4 +8,8 @@ export class CreateSongDto {
   @IsNotEmpty()
   @IsString()
   artist: string;
+
+  @IsNotEmpty()
+  @IsString()
+  client_request_id: string;
 }

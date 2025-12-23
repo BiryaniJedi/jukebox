@@ -24,5 +24,6 @@ export function mapSongRow(row: SongRow): Song {
       user_id: row.user_id,
       display_name: row.display_name,
     },
+    client_request_id: row.client_request_id,
   };
 }

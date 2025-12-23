@@ -8,4 +8,5 @@ export class Song {
     user_id: string;
     display_name: string;
   };
+  client_request_id: string;
 }

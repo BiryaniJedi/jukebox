@@ -9,6 +9,7 @@ export type Song = {
     user_id: string;
     display_name: string;
   };
+  client_request_id: string,
   optimistic?: boolean;
   deleting?: boolean;
 };

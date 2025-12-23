@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Song } from '@/types/song.type';
+import { v4 as uuid } from 'uuid';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
 
@@ -32,6 +33,7 @@ export default function AddSongForm({ partyId, onOptimisticSong, onOptimisticSon
     setError(null);
 
     const tempId = crypto.randomUUID();
+    const client_request_id = uuid();
 
     onOptimisticSong({
       temp_id: tempId,
@@ -43,6 +45,7 @@ export default function AddSongForm({ partyId, onOptimisticSong, onOptimisticSon
         display_name: 'Guest',
       },
       requested_at: new Date().toISOString(),
+      client_request_id: client_request_id,
       optimistic: true,
     })
 
@@ -53,7 +56,7 @@ export default function AddSongForm({ partyId, onOptimisticSong, onOptimisticSon
           'Content-Type': 'application/json',
           'x-user-id': userId,
          },
-        body: JSON.stringify({ title, artist }),
+        body: JSON.stringify({ title, artist, client_request_id}),
       });
 
       if (!res.ok) {

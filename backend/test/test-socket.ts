@@ -4,8 +4,9 @@ const args = process.argv.slice(2);
 
 socket.on('connect', () => {
   console.log('Connected:', socket.id);
-  socket.emit('join_party', args[0]);
-  console.log('Joined party: ', args[0]);
+  for (let i: number = 0; i < 10; i++) {
+    socket.emit('join_party', args[0]);
+  }
 });
 
 socket.on('song_added', (song) => {
@@ -14,4 +15,8 @@ socket.on('song_added', (song) => {
 
 socket.on('song_deleted', (song) => {
   console.log('Song deleted:', song);
+});
+
+socket.on('song_add_failed', (song) => {
+  console.log('Song Add Failed! tried to add song:', song);
 });

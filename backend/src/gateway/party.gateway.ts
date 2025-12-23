@@ -39,6 +39,7 @@ export class PartyGateway implements OnGatewayConnection, OnGatewayDisconnect {
       'joinedParties' in client.data &&
       client.data.joinedParties.has(partyId)
     ) {
+      console.log(`Client ${client.id} has already joined party ${partyId}`);
       return;
     } else {
       if (!('joinedParties' in client.data)) {
@@ -56,5 +57,9 @@ export class PartyGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   broadcastSongDeleted(partyId: string, song: Song) {
     this.server.to(partyId).emit('song_deleted', song);
+  }
+
+  broadcastSongAddFailed(partyId: string, song: Song) {
+    this.server.to(partyId).emit('song_add_failed', song);
   }
 }
