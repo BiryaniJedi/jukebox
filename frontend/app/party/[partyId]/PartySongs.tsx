@@ -8,12 +8,29 @@ import { formatTimestamp } from '@/lib/date-format';
 type PartySongsProps = {
   partyId: string;
   songs: Song[];
-  delError: string | null;
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
   onDeleteSong: (song: Song, requesting_uid: string) => Promise<void>;
 };
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL!;
+
+function getErrorMessage(error: unknown): string {
+  // Check if the error is a standard Error object and return its message
+  if (error instanceof Error) {
+    return error.message;
+  }
+  // Check if the error is a string literal
+  if (typeof error === 'string') {
+    return error;
+  }
+  // Fallback for other types (e.g., numbers, or complex non-Error objects)
+  try {
+    return JSON.stringify(error);
+  } catch {
+    // If stringification fails (e.g., circular references)
+    return 'An unknown error occurred';
+  }
+}
 
 export default function PartySongs({
   partyId,
@@ -59,8 +76,10 @@ export default function PartySongs({
 
     try {
       await onDeleteSong(song, uid);
-    } catch {
-      setError('Failed to delete song');
+    } catch(err) {
+      const errMessage = getErrorMessage(err);
+      console.log(errMessage);
+      setError(errMessage);
     }
   }
 
