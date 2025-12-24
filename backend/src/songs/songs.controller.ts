@@ -8,17 +8,19 @@ import {
   Param,
   HttpCode,
   HttpStatus,
-  BadRequestException,
 } from '@nestjs/common';
 import { SongsService } from './songs.service';
+import { AuthService } from '../auth/auth.service';
 import { Song } from './song.model';
 import { CreateSongDto } from './dto/create-song.dto';
 import { ParseUUIDPipe } from '@nestjs/common';
-import { isUUID } from 'class-validator';
 
 @Controller('parties/:party_id/songs')
 export class SongsController {
-  constructor(private readonly songsService: SongsService) {}
+  constructor(
+    private readonly songsService: SongsService,
+    private readonly authService: AuthService,
+  ) {}
 
   @Get()
   async getSongsForParty(@Param('party_id') party_id: string): Promise<Song[]> {
@@ -32,14 +34,12 @@ export class SongsController {
   async addSongToParty(
     @Param('party_id', ParseUUIDPipe) party_id: string,
     @Body() dto: CreateSongDto,
-    @Headers('x-user-id') user_id: string,
+    @Headers() headers: Record<string, string>,
   ): Promise<Song> {
-    if (!isUUID(user_id)) {
-      throw new BadRequestException('Cannot add song, Invalid user id');
-    }
+    const user = await this.authService.authenticate(headers);
     const result = await this.songsService.addSongToParty(
       party_id,
-      user_id,
+      user!.user_id,
       dto,
     );
 
@@ -50,15 +50,13 @@ export class SongsController {
   async deleteSongFromParty(
     @Param('party_id', ParseUUIDPipe) party_id: string,
     @Param('song_id', ParseUUIDPipe) song_id: string,
-    @Headers('x-user-id') requesting_uid: string,
+    @Headers() headers: Record<string, string>,
   ): Promise<Song> {
-    if (!isUUID(requesting_uid)) {
-      throw new BadRequestException('Cannot delete song, Invalid user id');
-    }
+    const user = await this.authService.authenticate(headers);
     const result = await this.songsService.deleteSongFromParty(
       party_id,
       song_id,
-      requesting_uid,
+      user!.user_id,
     );
 
     return result;

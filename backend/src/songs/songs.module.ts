@@ -5,9 +5,16 @@ import { SongsService } from './songs.service';
 import { SongsController } from './songs.controller';
 import { GatewayModule } from '../gateway/gateway.module';
 import { UsersModule } from '../users/users.module';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [DatabaseModule, PartiesModule, GatewayModule, UsersModule],
+  imports: [
+    DatabaseModule,
+    PartiesModule,
+    GatewayModule,
+    UsersModule,
+    AuthModule,
+  ],
   providers: [SongsService],
   controllers: [SongsController],
   exports: [SongsService],

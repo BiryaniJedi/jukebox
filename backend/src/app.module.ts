@@ -7,6 +7,8 @@ import { DatabaseModule } from './database/database.module';
 import { SongsModule } from './songs/songs.module';
 import { GatewayModule } from './gateway/gateway.module';
 import { UsersModule } from './users/users.module';
+import { AuthService } from './auth/auth.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -18,8 +20,9 @@ import { UsersModule } from './users/users.module';
     SongsModule,
     GatewayModule,
     UsersModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, AuthService],
 })
 export class AppModule {}
