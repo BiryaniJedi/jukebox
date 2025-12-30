@@ -3,19 +3,12 @@ import { UsersService } from '../users/users.service';
 import { UnauthorizedException } from '@nestjs/common';
 import { User } from '../users/user.model';
 
-type AuthenticatedUser = {
-  user_id: string;
-  display_name: string;
-};
-
 @Injectable()
 export class AuthService {
   constructor(private readonly usersService: UsersService) {}
   async authenticate(
-    headers: Record<string, string>,
-  ): Promise<AuthenticatedUser | null> {
-    const userId: string = headers['x-user-id'];
-
+    userId: string,
+  ): Promise<{ user_id: string; display_name: string } | null> {
     if (!userId) {
       throw new UnauthorizedException(
         'Missing credentials: user_id cannot be empty.',

@@ -20,17 +20,19 @@ export class SongsService {
 
   async addSongToParty(
     party_id: string,
-    user_id: string,
+    user: {
+      user_id: string;
+      display_name: string;
+    },
     dto: CreateSongDto,
   ): Promise<Song> {
     await this.partiesService.getParty(party_id);
-    await this.usersService.getUser(user_id);
 
     const insertedResult = await this.db.query<{ song_id: string }>(
       `INSERT INTO songs (party_id, title, artist, req_by_uid, client_request_id)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING song_id`,
-      [party_id, dto.title, dto.artist, user_id, dto.client_request_id],
+      [party_id, dto.title, dto.artist, user.user_id, dto.client_request_id],
     );
 
     const insertedSongId = assertFound(
@@ -87,7 +89,10 @@ export class SongsService {
   async deleteSongFromParty(
     party_id: string,
     song_id: string,
-    requesting_user_id: string,
+    user: {
+      user_id: string;
+      display_name: string;
+    },
   ): Promise<Song> {
     await this.partiesService.getParty(party_id);
 
@@ -108,7 +113,7 @@ export class SongsService {
           s.client_request_id,
           u.user_id,
           u.display_name`,
-      [party_id, song_id, requesting_user_id],
+      [party_id, song_id, user.user_id],
     );
 
     if (result.rows.length === 0) {
@@ -125,7 +130,7 @@ export class SongsService {
         throw new NotFoundException(errMsg);
       }
 
-      errMsg = `Song was not requested by user with user_id: ${requesting_user_id}.`;
+      errMsg = `Song was not requested by user with user_id: ${user.user_id}.`;
       throw new ForbiddenException(errMsg);
     }
     const deletedSong = mapSongRow(result.rows[0]);

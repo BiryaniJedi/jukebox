@@ -4,23 +4,22 @@ import {
   Post,
   Delete,
   Body,
-  Headers,
   Param,
   HttpCode,
   HttpStatus,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { SongsService } from './songs.service';
-import { AuthService } from '../auth/auth.service';
 import { Song } from './song.model';
 import { CreateSongDto } from './dto/create-song.dto';
 import { ParseUUIDPipe } from '@nestjs/common';
+import { AuthGuard } from '../auth/auth.guard';
+import { Request } from 'express';
 
 @Controller('parties/:party_id/songs')
 export class SongsController {
-  constructor(
-    private readonly songsService: SongsService,
-    private readonly authService: AuthService,
-  ) {}
+  constructor(private readonly songsService: SongsService) {}
 
   @Get()
   async getSongsForParty(@Param('party_id') party_id: string): Promise<Song[]> {
@@ -29,34 +28,32 @@ export class SongsController {
     return result;
   }
 
+  @UseGuards(AuthGuard)
   @Post()
   @HttpCode(HttpStatus.CREATED) // 201
   async addSongToParty(
     @Param('party_id', ParseUUIDPipe) party_id: string,
     @Body() dto: CreateSongDto,
-    @Headers() headers: Record<string, string>,
+    @Req() req: Request,
   ): Promise<Song> {
-    const user = await this.authService.authenticate(headers);
-    const result = await this.songsService.addSongToParty(
-      party_id,
-      user!.user_id,
-      dto,
-    );
+    const user = req.user!;
+    const result = await this.songsService.addSongToParty(party_id, user, dto);
 
     return result;
   }
 
+  @UseGuards(AuthGuard)
   @Delete(':song_id')
   async deleteSongFromParty(
     @Param('party_id', ParseUUIDPipe) party_id: string,
     @Param('song_id', ParseUUIDPipe) song_id: string,
-    @Headers() headers: Record<string, string>,
+    @Req() req: Request,
   ): Promise<Song> {
-    const user = await this.authService.authenticate(headers);
+    const user = req.user!;
     const result = await this.songsService.deleteSongFromParty(
       party_id,
       song_id,
-      user!.user_id,
+      user,
     );
 
     return result;
